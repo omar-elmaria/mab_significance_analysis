@@ -1,0 +1,17 @@
+-- Install dependencies
+pip3 install -r requirements.txt
+
+*** How to restore the last run Notebook session? ***. This is important because all the functions are dynamic, so if you run the script again, you will likely get slightly different results
+METHOD 1
+%store -r alpha_threshold df_analysis df_comp df_q3 df_raw_data_exp df_raw_data_ts df_sig_combined df_sig_exp df_sig_ts df_ts_orders_pct lower_bound_ts_order_pct opp_dir_deltas_threshold sort_cols_1 sort_cols_2 sql_query_mab_dataset sql_query_ts_orders upper_bound_ts_order_pct # r for refresh
+
+
+METHOD 2 (fallback if METHOD 1 doesn't work)
+-- Download the "mab_significance_analysis_notebook.db" file from the link below.
+
+You can get the .db file from here --> https://drive.google.com/drive/folders/1seBh6LDAjdPfANu2QpvbHfhqDqxYUqd5?usp=sharing
+
+-- Import the required packages and py script and run the following command
+dill.load_session('mab_significance_analysis_notebook.db')
+
+This will restore the variables and data frames from the last time that I ran the script on the 4th of July
