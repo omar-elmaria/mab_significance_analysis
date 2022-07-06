@@ -3,12 +3,12 @@ import datetime
 from google.cloud import bigquery
 from datetime import datetime
 
-def run_data_queries_func():
+def run_data_queries_func(path):
     # Instantiate the BQ client
     client = bigquery.Client(project = 'logistics-data-staging-flat')
 
     # Read the SQL file
-    f = open("G:/My Drive/APAC/Autopricing/Bayesian Statistics and MAB/mab_significance_analysis/data_queries_v5.sql", "r")
+    f = open(path, "r")
     sql_script = f.read()
     f.close()
 
