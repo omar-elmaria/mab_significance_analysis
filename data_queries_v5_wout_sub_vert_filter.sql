@@ -65,6 +65,7 @@ WITH vendor_tg_vertical_mapping_with_dup AS (
     AND customer_condition.id IS NULL -- Filter out tests with a customer condition to simplify the analysis 
     AND vendor_id IS NOT NULL -- Filter out tests where there are no matching vendors
     AND parent_vertical IS NOT NULL -- Filter out tests where there is no parent_vertical
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY entity_id, country_code, test_name, vendor_id ORDER BY vendor_group_id) = 1 -- If by mistake a vendor is included in two or more target groups, take the highest priority one
 ),
 
 vendor_tg_vertical_mapping_agg AS (
@@ -133,7 +134,7 @@ ORDER BY 1,2;
 
 -- Step 4.1: Extract the target groups, variants, and price schemes of the tests
 CREATE OR REPLACE TABLE `dh-logistics-product-ops.pricing.ab_test_tgs_variants_and_schemes_mab_sig_analysis` AS
-SELECT
+SELECT DISTINCT
     entity_id,
     country_code,
     test_start_date,
@@ -287,6 +288,7 @@ SELECT
 
     -- Business KPIs (These are the components of profit)
     a.dps_delivery_fee_local,
+    a.delivery_fee_local,
     a.commission_local,
     a.joker_vendor_fee_local,
     COALESCE(a.service_fee, 0) AS service_fee_local,
@@ -297,7 +299,7 @@ SELECT
         WHEN ent.region IN ('Europe', 'Asia') THEN COALESCE( -- Get the delivery fee data of Pandora countries from Pandata tables
             pd.delivery_fee_local, 
             -- In 99 pct of cases, we won't need to use that fallback logic as pd.delivery_fee_local is reliable
-            IF(a.is_delivery_fee_covered_by_discount = TRUE OR a.is_delivery_fee_covered_by_voucher = TRUE, 0, a.dps_delivery_fee_local)
+            IF(a.is_delivery_fee_covered_by_discount = TRUE OR a.is_delivery_fee_covered_by_voucher = TRUE, 0, a.delivery_fee_local)
         )
         -- If the order comes from a non-Pandora country, use delivery_fee_local
         WHEN ent.region NOT IN ('Europe', 'Asia') THEN (CASE WHEN is_delivery_fee_covered_by_voucher = FALSE AND is_delivery_fee_covered_by_discount = FALSE THEN a.delivery_fee_local ELSE 0 END)
@@ -370,12 +372,12 @@ SELECT
   -- Revenue and profit formulas
   COALESCE(
       actual_df_paid_by_customer, 
-      IF(is_delivery_fee_covered_by_discount = TRUE OR is_delivery_fee_covered_by_voucher = TRUE, 0, dps_delivery_fee_local)
+      IF(is_delivery_fee_covered_by_discount = TRUE OR is_delivery_fee_covered_by_voucher = TRUE, 0, delivery_fee_local)
   ) + commission_local + joker_vendor_fee_local + service_fee_local + COALESCE(sof_local_cdwh, sof_local) AS revenue_local,
 
   COALESCE(
       actual_df_paid_by_customer, 
-      IF(is_delivery_fee_covered_by_discount = TRUE OR is_delivery_fee_covered_by_voucher = TRUE, 0, dps_delivery_fee_local)
+      IF(is_delivery_fee_covered_by_discount = TRUE OR is_delivery_fee_covered_by_voucher = TRUE, 0, delivery_fee_local)
   ) + commission_local + joker_vendor_fee_local + service_fee_local + COALESCE(sof_local_cdwh, sof_local_cdwh) - delivery_costs_local AS gross_profit_local,
 FROM `dh-logistics-product-ops.pricing.ab_test_individual_orders_mab_sig_analysis`
 WHERE TRUE -- Filter for orders from the right parent vertical (restuarants, shop, darkstores, etc.) per experiment
