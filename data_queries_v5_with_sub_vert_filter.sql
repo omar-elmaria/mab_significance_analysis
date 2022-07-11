@@ -378,7 +378,7 @@ SELECT
   COALESCE(
       actual_df_paid_by_customer, 
       IF(is_delivery_fee_covered_by_discount = TRUE OR is_delivery_fee_covered_by_voucher = TRUE, 0, delivery_fee_local)
-  ) + commission_local + joker_vendor_fee_local + service_fee_local + COALESCE(sof_local_cdwh, sof_local_cdwh) - delivery_costs_local AS gross_profit_local,
+  ) + commission_local + joker_vendor_fee_local + service_fee_local + COALESCE(sof_local_cdwh, sof_local) - delivery_costs_local AS gross_profit_local,
 FROM `dh-logistics-product-ops.pricing.ab_test_individual_orders_mab_sig_analysis`
 WHERE TRUE -- Filter for orders from the right parent vertical (restuarants, shop, darkstores, etc.) per experiment
     AND (
